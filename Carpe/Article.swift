@@ -13,10 +13,19 @@ final class Article {
     var url: URL
     var title: String
     var createdAt: Date
+    var readAt: Date?
     
     init(url: URL, title: String) {
         self.url = url
         self.title = title
         self.createdAt = .now
+    }
+    
+    func read() {
+        self.readAt = .now
+    }
+    
+    func unread() {
+        self.readAt = nil
     }
 }

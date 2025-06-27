@@ -14,23 +14,27 @@ struct ContentView: View {
     
     @State private var showAlert = false
     @State private var urlString = ""
+    @State private var unreadExpanded = true
+    @State private var readExpanded = false
 
     var body: some View {
         NavigationSplitView {
             List {
-                ForEach(articles) { item in
-                    NavigationLink {
-                        ArticleView(article: item)
-                    } label: {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(item.title)
-                            Text(item.url.absoluteString)
-                                .foregroundStyle(.secondary)
-                                .font(.caption)
-                        }
-                    }
-                }
-                .onDelete(perform: deleteItems)
+                ArticleSection(
+                    title: "To Read",
+                    articles: unreadArticles,
+                    isExpanded: $unreadExpanded,
+                    isRead: false,
+                    onDelete: deleteUnreadItems
+                )
+                
+                ArticleSection(
+                    title: "Read",
+                    articles: readArticles,
+                    isExpanded: $readExpanded,
+                    isRead: true,
+                    onDelete: deleteReadItems
+                )
             }
 #if os(macOS)
             .navigationSplitViewColumnWidth(min: 180, ideal: 200)
@@ -41,21 +45,22 @@ struct ContentView: View {
                         showAlert = true
                     }) {
                         Label("Add Item", systemImage: "plus")
-                    }.alert("Add new article", isPresented: $showAlert) {
-                        // Text field
-                        TextField("https://example.com", text: $urlString)
-#if os(iOS)
-                            .keyboardType(.URL)
-#endif
-#if os(macOS)
-                            .textContentType(NSTextContentType.URL)
-#endif
-                        
-                        Button("Cancel", role: .cancel) { urlString = "" }
-                        Button("Add", action: addURL)
-                            .disabled(!isValidURL)
                     }
                 }
+            }
+            .alert("Add new article", isPresented: $showAlert) {
+                // Text field
+                TextField("https://example.com", text: $urlString)
+#if os(iOS)
+                    .keyboardType(.URL)
+#endif
+#if os(macOS)
+                    .textContentType(NSTextContentType.URL)
+#endif
+                
+                Button("Cancel", role: .cancel) { urlString = "" }
+                Button("Add", action: addURL)
+                    .disabled(!isValidURL)
             }
         } detail: {
             Text("Select an item")
@@ -79,6 +84,18 @@ struct ContentView: View {
         }
         
         urlString = ""
+    }
+    
+    private var unreadArticles: [Article] {
+        articles
+            .filter { $0.readAt == nil }
+            .sorted { $0.createdAt > $1.createdAt }
+    }
+    
+    private var readArticles: [Article] {
+        articles
+            .filter { $0.readAt != nil }
+            .sorted { $0.readAt! > $1.readAt! }
     }
     
     private func extractTitle(from url: URL) async -> String? {
@@ -112,10 +129,65 @@ struct ContentView: View {
         URL(string: urlString)?.scheme?.hasPrefix("http") == true
     }
 
-    private func deleteItems(offsets: IndexSet) {
+    private func deleteUnreadItems(offsets: IndexSet) {
         withAnimation {
             for index in offsets {
-                modelContext.delete(articles[index])
+                modelContext.delete(unreadArticles[index])
+            }
+        }
+    }
+    
+    private func deleteReadItems(offsets: IndexSet) {
+        withAnimation {
+            for index in offsets {
+                modelContext.delete(readArticles[index])
+            }
+        }
+    }
+}
+
+struct ArticleSection: View {
+    let title: String
+    let articles: [Article]
+    @Binding var isExpanded: Bool
+    let isRead: Bool
+    let onDelete: (IndexSet) -> Void
+    
+    var body: some View {
+        Section(isExpanded: $isExpanded) {
+            ForEach(articles) { item in
+                NavigationLink {
+                    ArticleView(article: item)
+                        .toolbar {
+                            ToolbarItem {
+                                Button(action: {
+                                    if isRead {
+                                        item.unread()
+                                    } else {
+                                        item.read()
+                                    }
+                                }) {
+                                    Label(
+                                        isRead ? "Mark as Unread" : "Mark as Read",
+                                        systemImage: isRead ? "circle" : "checkmark.circle"
+                                    )
+                                }
+                            }
+                        }
+                } label: {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(item.title)
+                            .foregroundStyle(isRead ? .secondary : .primary)
+                        Text(item.url.absoluteString)
+                            .foregroundStyle(.secondary)
+                            .font(.caption)
+                    }
+                }
+            }
+            .onDelete(perform: onDelete)
+        } header: {
+            HStack {
+                Text(title)
             }
         }
     }
