@@ -45,7 +45,7 @@ struct ContentView: View {
                         // Text field
                         TextField("https://example.com", text: $urlString)
 #if os(iOS)
-                            .keyboardType(.URL)           // iOS only – ignored on macOS
+                            .keyboardType(.URL)
 #endif
 #if os(macOS)
                             .textContentType(NSTextContentType.URL)
@@ -66,8 +66,46 @@ struct ContentView: View {
         guard let url = URL(string: urlString) else {
             return
         }
-        let article = Article(url: url, title: "New Article")
+        let article = Article(url: url, title: "Loading…")
         modelContext.insert(article)
+        
+        // Extract title from HTML
+        Task {
+            if let title = await extractTitle(from: url) {
+                await MainActor.run {
+                    article.title = title
+                }
+            }
+        }
+        
+        urlString = ""
+    }
+    
+    private func extractTitle(from url: URL) async -> String? {
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            guard let html = String(data: data, encoding: .utf8) else { return nil }
+            
+            // Parse title tag
+            let titlePattern = #"<title[^>]*>(.*?)</title>"#
+            let regex = try NSRegularExpression(pattern: titlePattern, options: [.caseInsensitive, .dotMatchesLineSeparators])
+            let range = NSRange(html.startIndex..., in: html)
+            
+            if let match = regex.firstMatch(in: html, options: [], range: range),
+               let titleRange = Range(match.range(at: 1), in: html) {
+                let title = String(html[titleRange])
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                    .replacingOccurrences(of: #"&amp;"#, with: "&")
+                    .replacingOccurrences(of: #"&lt;"#, with: "<")
+                    .replacingOccurrences(of: #"&gt;"#, with: ">")
+                    .replacingOccurrences(of: #"&quot;"#, with: "\"")
+                    .replacingOccurrences(of: #"&#39;"#, with: "'")
+                return title.isEmpty ? nil : title
+            }
+        } catch {
+            print("Error extracting title: \(error)")
+        }
+        return nil
     }
     
     private var isValidURL: Bool {
@@ -134,7 +172,9 @@ struct URLInputModal: View {
                 }
             }
             .padding()
-//            .navigationBarTitleDisplayMode(.inline)
+#if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+#endif
             .navigationBarBackButtonHidden()
         }
     }
