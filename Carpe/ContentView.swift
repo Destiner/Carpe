@@ -15,13 +15,13 @@ struct ContentView: View {
     @State private var showAlert = false
     @State private var urlString = ""
 
-
     var body: some View {
         NavigationSplitView {
             List {
                 ForEach(articles) { item in
                     NavigationLink {
-                        Text("Item at \(item.createdAt, format: Date.FormatStyle(date: .numeric, time: .standard))")
+                        ArticleView()
+                            .environment(ArticleViewModel(article: item))
                     } label: {
                         VStack(alignment: .leading, spacing: 8) {
                             Text(item.title)
