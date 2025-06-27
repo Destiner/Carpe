@@ -10,15 +10,16 @@ import SwiftUI
 import WebKit
 
 struct ArticleView: View {
-    @Environment(ArticleViewModel.self) private var model
+    let article: Article
+    @State private var page = WebPage()
     
     var body: some View {
-        WebView(model.page)
+        WebView(page)
             .onAppear() {
-                model.loadArticle()
+                page.load(URLRequest(url: article.url))
             }
-            .onChange(of: model.article) { _, _ in
-                model.loadArticle()
+            .onChange(of: article.url) { _, newURL in
+                page.load(URLRequest(url: newURL))
             }
             .ignoresSafeArea(.all, edges: .bottom)
     }

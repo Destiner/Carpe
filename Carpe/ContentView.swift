@@ -20,8 +20,7 @@ struct ContentView: View {
             List {
                 ForEach(articles) { item in
                     NavigationLink {
-                        ArticleView()
-                            .environment(ArticleViewModel(article: item))
+                        ArticleView(article: item)
                     } label: {
                         VStack(alignment: .leading, spacing: 8) {
                             Text(item.title)
