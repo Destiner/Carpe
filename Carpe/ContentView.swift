@@ -10,16 +10,25 @@ import SwiftData
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
+    @Query private var articles: [Article]
+    
+    @State private var showAlert = false
+    @State private var urlString = ""
+
 
     var body: some View {
         NavigationSplitView {
             List {
-                ForEach(items) { item in
+                ForEach(articles) { item in
                     NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
+                        Text("Item at \(item.createdAt, format: Date.FormatStyle(date: .numeric, time: .standard))")
                     } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(item.title)
+                            Text(item.url.absoluteString)
+                                .foregroundStyle(.secondary)
+                                .font(.caption)
+                        }
                     }
                 }
                 .onDelete(perform: deleteItems)
@@ -28,14 +37,24 @@ struct ContentView: View {
             .navigationSplitViewColumnWidth(min: 180, ideal: 200)
 #endif
             .toolbar {
-#if os(iOS)
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-#endif
                 ToolbarItem {
-                    Button(action: addItem) {
+                    Button(action: {
+                        showAlert = true
+                    }) {
                         Label("Add Item", systemImage: "plus")
+                    }.alert("Add new article", isPresented: $showAlert) {
+                        // Text field
+                        TextField("https://example.com", text: $urlString)
+#if os(iOS)
+                            .keyboardType(.URL)           // iOS only – ignored on macOS
+#endif
+#if os(macOS)
+                            .textContentType(NSTextContentType.URL)
+#endif
+                        
+                        Button("Cancel", role: .cancel) { urlString = "" }
+                        Button("Add", action: addURL)
+                            .disabled(!isValidURL)
                     }
                 }
             }
@@ -43,24 +62,136 @@ struct ContentView: View {
             Text("Select an item")
         }
     }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
+    
+    private func addURL() {
+        guard let url = URL(string: urlString) else {
+            return
         }
+        let article = Article(url: url, title: "New Article")
+        modelContext.insert(article)
+    }
+    
+    private var isValidURL: Bool {
+        URL(string: urlString)?.scheme?.hasPrefix("http") == true
     }
 
     private func deleteItems(offsets: IndexSet) {
         withAnimation {
             for index in offsets {
-                modelContext.delete(items[index])
+                modelContext.delete(articles[index])
             }
         }
     }
 }
 
+struct URLInputModal: View {
+    @Binding var savedURL: String
+    @Environment(\.dismiss) private var dismiss
+    
+    @State private var inputURL: String = ""
+    @State private var isValidURL: Bool = true
+    @State private var errorMessage: String = ""
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 20) {
+                Text("Enter Web Page URL")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    TextField("https://example.com", text: $inputURL)
+                        .textFieldStyle(.roundedBorder)
+//                        .keyboardType(.URL)
+//                        .autocapitalization(.none)
+                        .autocorrectionDisabled()
+                        .onChange(of: inputURL) { _, newValue in
+                            validateURL(newValue)
+                        }
+                    
+                    if !isValidURL {
+                        Text(errorMessage)
+                            .font(.caption)
+                            .foregroundColor(.red)
+                    }
+                }
+                
+                HStack(spacing: 15) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                    .buttonStyle(.bordered)
+                    .frame(maxWidth: .infinity)
+                    
+                    Button("Add URL") {
+                        if isValidURL && !inputURL.isEmpty {
+                            savedURL = inputURL
+                            dismiss()
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .frame(maxWidth: .infinity)
+                    .disabled(!isValidURL || inputURL.isEmpty)
+                }
+            }
+            .padding()
+//            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarBackButtonHidden()
+        }
+    }
+    
+    private func validateURL(_ urlString: String) {
+        guard !urlString.isEmpty else {
+            isValidURL = true
+            errorMessage = ""
+            return
+        }
+        
+        // Add protocol if missing
+        var processedURL = urlString
+        if !urlString.lowercased().hasPrefix("http://") && !urlString.lowercased().hasPrefix("https://") {
+            processedURL = "https://" + urlString
+        }
+        
+        if let url = URL(string: processedURL),
+           url.scheme != nil,
+           url.host != nil {
+            isValidURL = true
+            errorMessage = ""
+            inputURL = processedURL // Update with proper protocol
+        } else {
+            isValidURL = false
+            errorMessage = "Please enter a valid URL"
+        }
+    }
+}
+
 #Preview {
-    ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(for: Article.self, configurations: config)
+    
+    guard let articleAUrl = URL(string: "https://zed.dev/blog/software-craftsmanship-in-the-era-of-vibes") else {
+        return ContentView()
+            .modelContainer(for: Article.self, inMemory: true)
+    }
+    let articleA = Article(url: articleAUrl, title: "The Case for Software Craftsmanship in the Era of Vibes")
+    
+    guard let articleBUrl = URL(string: "https://www.anthropic.com/engineering/building-effective-agents") else {
+        return ContentView()
+            .modelContainer(for: Article.self, inMemory: true)
+    }
+    let articleB = Article(url: articleBUrl, title: "Building effective agents")
+    
+    guard let articleCUrl = URL(string: "https://supermemory.ai/blog/memory-engine/") else {
+        return ContentView()
+            .modelContainer(for: Article.self, inMemory: true)
+    }
+    let articleC = Article(url: articleCUrl, title: "Architecting a memory engine inspired by the human brain")
+    
+    container.mainContext.insert(articleA)
+    container.mainContext.insert(articleB)
+    container.mainContext.insert(articleC)
+    
+    return ContentView()
+        .modelContainer(container)
 }
