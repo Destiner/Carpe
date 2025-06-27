@@ -211,8 +211,10 @@ struct URLInputModal: View {
                 VStack(alignment: .leading, spacing: 8) {
                     TextField("https://example.com", text: $inputURL)
                         .textFieldStyle(.roundedBorder)
-//                        .keyboardType(.URL)
-//                        .autocapitalization(.none)
+#if os(iOS)
+                        .keyboardType(.URL)
+                        .autocapitalization(.none)
+#endif
                         .autocorrectionDisabled()
                         .onChange(of: inputURL) { _, newValue in
                             validateURL(newValue)
