@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		519BF2242E0F59CD0007D560 /* Carpe.icon in Resources */ = {isa = PBXBuildFile; fileRef = 519BF2232E0F59CD0007D560 /* Carpe.icon */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		5154CF902E0F249700F5E181 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -27,6 +31,7 @@
 		5154CF7F2E0F249500F5E181 /* Carpe.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Carpe.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5154CF8F2E0F249700F5E181 /* CarpeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CarpeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5154CF992E0F249700F5E181 /* CarpeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CarpeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		519BF2232E0F59CD0007D560 /* Carpe.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = Carpe.icon; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -75,6 +80,7 @@
 		5154CF762E0F249500F5E181 = {
 			isa = PBXGroup;
 			children = (
+				519BF2232E0F59CD0007D560 /* Carpe.icon */,
 				5154CF812E0F249500F5E181 /* Carpe */,
 				5154CF922E0F249700F5E181 /* CarpeTests */,
 				5154CF9C2E0F249700F5E181 /* CarpeUITests */,
@@ -212,6 +218,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				519BF2242E0F59CD0007D560 /* Carpe.icon in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -388,7 +395,7 @@
 		5154CFA42E0F249700F5E181 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = Carpe;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Carpe/Carpe.entitlements;
 				CODE_SIGN_STYLE = Automatic;
@@ -408,6 +415,7 @@
 				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
 				ENABLE_RESOURCE_ACCESS_USB = NO;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -438,7 +446,7 @@
 		5154CFA52E0F249700F5E181 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = Carpe;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Carpe/Carpe.entitlements;
 				CODE_SIGN_STYLE = Automatic;
@@ -458,6 +466,7 @@
 				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
 				ENABLE_RESOURCE_ACCESS_USB = NO;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
