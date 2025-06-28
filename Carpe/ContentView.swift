@@ -75,24 +75,7 @@ struct ContentView: View {
         let article = Article(url: url, title: "Loading…")
         modelContext.insert(article)
         
-        // Extract title and cover image from HTML
-        Task {
-            async let title = extractTitle(from: url)
-            async let coverImage = extractCoverImage(from: url)
-            
-            let (extractedTitle, extractedCoverImage) = await (title, coverImage)
-            
-            await MainActor.run {
-                if let extractedTitle = extractedTitle {
-                    article.title = extractedTitle
-                }
-                if let extractedCoverImage = extractedCoverImage {
-                    article.coverImageUrl = extractedCoverImage
-                }
-            }
-        }
-        
-        // Save for offline use
+        // Save for offline use and extract metadata
         Task {
             let page = WebPage()
             let id = page.load(URLRequest(url: article.url))
@@ -107,8 +90,10 @@ struct ContentView: View {
                 case .failed(_):
                     return
                 case .finished:
+                    article.title = page.title
+                    article.coverImageUrl = await getPageCoverImage(page: page)
+                    // Store page data for offline use
                     article.pageData = try? await page.webArchiveData()
-                    return
                 default:
                     continue
                 }
@@ -130,82 +115,32 @@ struct ContentView: View {
             .sorted { $0.readAt! > $1.readAt! }
     }
     
-    private func extractTitle(from url: URL) async -> String? {
-        do {
-            let (data, _) = try await URLSession.shared.data(from: url)
-            guard let html = String(data: data, encoding: .utf8) else { return nil }
-            
-            // Parse title tag
-            let titlePattern = #"<title[^>]*>(.*?)</title>"#
-            let regex = try NSRegularExpression(pattern: titlePattern, options: [.caseInsensitive, .dotMatchesLineSeparators])
-            let range = NSRange(html.startIndex..., in: html)
-            
-            if let match = regex.firstMatch(in: html, options: [], range: range),
-               let titleRange = Range(match.range(at: 1), in: html) {
-                let title = String(html[titleRange])
-                    .trimmingCharacters(in: .whitespacesAndNewlines)
-                    .replacingOccurrences(of: #"&amp;"#, with: "&")
-                    .replacingOccurrences(of: #"&lt;"#, with: "<")
-                    .replacingOccurrences(of: #"&gt;"#, with: ">")
-                    .replacingOccurrences(of: #"&quot;"#, with: "\"")
-                    .replacingOccurrences(of: #"&#39;"#, with: "'")
-                return title.isEmpty ? nil : title
-            }
-        } catch {
-            print("Error extracting title: \(error)")
-        }
-        return nil
-    }
-    
-    private func extractCoverImage(from url: URL) async -> String? {
-        do {
-            let (data, _) = try await URLSession.shared.data(from: url)
-            guard let html = String(data: data, encoding: .utf8) else { return nil }
-            
+    private func getPageCoverImage(page: WebPage) async -> String? {
+        // Extract cover image using JavaScript
+        let coverImageScript = """
             // Try og:image first
-            let ogImagePattern = #"<meta[^>]*property=["\']og:image["\'][^>]*content=["\']([^"\']*)["\']"#
-            let ogImageRegex = try NSRegularExpression(pattern: ogImagePattern, options: [.caseInsensitive])
-            let range = NSRange(html.startIndex..., in: html)
-            
-            if let match = ogImageRegex.firstMatch(in: html, options: [], range: range),
-               let imageRange = Range(match.range(at: 1), in: html) {
-                let imageUrl = String(html[imageRange]).trimmingCharacters(in: .whitespacesAndNewlines)
-                if !imageUrl.isEmpty {
-                    return resolveImageUrl(imageUrl, baseUrl: url)
-                }
+            let ogImage = document.querySelector('meta[property="og:image"]');
+            if (ogImage && ogImage.content) {
+                return ogImage.content;
             }
             
             // Fallback to twitter:image
-            let twitterImagePattern = #"<meta[^>]*name=["\']twitter:image["\'][^>]*content=["\']([^"\']*)["\']"#
-            let twitterImageRegex = try NSRegularExpression(pattern: twitterImagePattern, options: [.caseInsensitive])
+            let twitterImage = document.querySelector('meta[name="twitter:image"]');
+            if (twitterImage && twitterImage.content) {
+                return twitterImage.content;
+            }
             
-            if let match = twitterImageRegex.firstMatch(in: html, options: [], range: range),
-               let imageRange = Range(match.range(at: 1), in: html) {
-                let imageUrl = String(html[imageRange]).trimmingCharacters(in: .whitespacesAndNewlines)
-                if !imageUrl.isEmpty {
-                    return resolveImageUrl(imageUrl, baseUrl: url)
-                }
+            // Fallback to twitter:image:src
+            let twitterImageSrc = document.querySelector('meta[name="twitter:image:src"]');
+            if (twitterImageSrc && twitterImageSrc.content) {
+                return twitterImageSrc.content;
             }
-        } catch {
-            print("Error extracting cover image: \(error)")
-        }
-        return nil
-    }
-    
-    private func resolveImageUrl(_ imageUrl: String, baseUrl: URL) -> String {
-        if imageUrl.hasPrefix("http://") || imageUrl.hasPrefix("https://") {
-            return imageUrl
-        } else if imageUrl.hasPrefix("//") {
-            return "https:" + imageUrl
-        } else if imageUrl.hasPrefix("/") {
-            if let host = baseUrl.host {
-                return "\(baseUrl.scheme ?? "https")://\(host)\(imageUrl)"
-            }
-        } else {
-            let baseUrlString = baseUrl.absoluteString.split(separator: "/").dropLast().joined(separator: "/")
-            return "\(baseUrlString)/\(imageUrl)"
-        }
-        return imageUrl
+            
+            return null;
+        """
+        
+        let coverImageUrl = try? await page.callJavaScript(coverImageScript) as? String
+        return coverImageUrl
     }
     
     private var isValidURL: Bool {
