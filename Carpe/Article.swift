@@ -9,11 +9,23 @@ import Foundation
 import SwiftData
 
 @Model
+class PageState {
+    var height: Double
+    var scrollY: Double
+    
+    init(height: Double, scrollY: Double) {
+        self.height = height
+        self.scrollY = scrollY
+    }
+}
+
+@Model
 final class Article {
     var url: URL
     var title: String
     var pageData: Data?
     var coverImageUrl: String?
+    var pageState: PageState?
     var createdAt: Date
     var readAt: Date?
     

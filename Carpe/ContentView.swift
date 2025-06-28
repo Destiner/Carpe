@@ -82,25 +82,13 @@ struct ContentView: View {
         // Save for offline use and extract metadata
         Task {
             let page = WebPage()
-            let id = page.load(URLRequest(url: article.url))
-            var event = page.currentNavigationEvent
-            while (true) {
-                try await Task.sleep(nanoseconds: 1_000_000_000)
-                event = page.currentNavigationEvent
-                if (event?.navigationID != id) {
-                    continue
-                }
-                switch (event?.kind) {
-                case .failed(_):
-                    return
-                case .finished:
-                    article.title = page.title
-                    article.coverImageUrl = await getPageCoverImage(page: page)
-                    // Store page data for offline use
-                    article.pageData = try? await page.webArchiveData()
-                default:
-                    continue
-                }
+            let isLoaded = await PageUtils.waitPageLoad(page: page, url: article.url)
+            if (isLoaded) {
+                article.title = page.title
+                article.coverImageUrl = await PageUtils.getPageCoverImage(page: page)
+
+                // Store page data for offline use
+                article.pageData = try? await page.webArchiveData()
             }
         }
         
@@ -117,34 +105,6 @@ struct ContentView: View {
         articles
             .filter { $0.readAt != nil }
             .sorted { $0.readAt! > $1.readAt! }
-    }
-    
-    private func getPageCoverImage(page: WebPage) async -> String? {
-        // Extract cover image using JavaScript
-        let coverImageScript = """
-            // Try og:image first
-            let ogImage = document.querySelector('meta[property="og:image"]');
-            if (ogImage && ogImage.content) {
-                return ogImage.content;
-            }
-            
-            // Fallback to twitter:image
-            let twitterImage = document.querySelector('meta[name="twitter:image"]');
-            if (twitterImage && twitterImage.content) {
-                return twitterImage.content;
-            }
-            
-            // Fallback to twitter:image:src
-            let twitterImageSrc = document.querySelector('meta[name="twitter:image:src"]');
-            if (twitterImageSrc && twitterImageSrc.content) {
-                return twitterImageSrc.content;
-            }
-            
-            return null;
-        """
-        
-        let coverImageUrl = try? await page.callJavaScript(coverImageScript) as? String
-        return coverImageUrl
     }
     
     private var isValidURL: Bool {
@@ -175,6 +135,8 @@ struct ArticleSection: View {
     let isRead: Bool
     let onDelete: (IndexSet) -> Void
     
+    @State var viewHeight: Double = 0
+    
     var body: some View {
         Section(isExpanded: $isExpanded) {
             ForEach(articles) { item in
@@ -195,6 +157,9 @@ struct ArticleSection: View {
                                     )
                                 }
                             }
+                        }
+                        .onGeometryChange(for: CGFloat.self, of: \.size.height) { _, newValue in
+                            viewHeight = newValue
                         }
                 } label: {
                     HStack(spacing: 12) {
@@ -231,6 +196,11 @@ struct ArticleSection: View {
                         }
                         
                         Spacer()
+                        
+                        if let pageState = item.pageState {
+                            let progress = (pageState.scrollY + viewHeight) / pageState.height
+                            CircularProgressView(progress: progress, size: 16)
+                        }
                     }
                 }
             }
@@ -243,88 +213,22 @@ struct ArticleSection: View {
     }
 }
 
-struct URLInputModal: View {
-    @Binding var savedURL: String
-    @Environment(\.dismiss) private var dismiss
-    
-    @State private var inputURL: String = ""
-    @State private var isValidURL: Bool = true
-    @State private var errorMessage: String = ""
+struct CircularProgressView: View {
+    let progress: Double
+    let size: CGFloat
     
     var body: some View {
-        NavigationView {
-            VStack(spacing: 20) {
-                Text("Enter Web Page URL")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                
-                VStack(alignment: .leading, spacing: 8) {
-                    TextField("https://example.com", text: $inputURL)
-                        .textFieldStyle(.roundedBorder)
-#if os(iOS)
-                        .keyboardType(.URL)
-                        .autocapitalization(.none)
-#endif
-                        .autocorrectionDisabled()
-                        .onChange(of: inputURL) { _, newValue in
-                            validateURL(newValue)
-                        }
-                    
-                    if !isValidURL {
-                        Text(errorMessage)
-                            .font(.caption)
-                            .foregroundColor(.red)
-                    }
-                }
-                
-                HStack(spacing: 15) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                    .buttonStyle(.bordered)
-                    .frame(maxWidth: .infinity)
-                    
-                    Button("Add URL") {
-                        if isValidURL && !inputURL.isEmpty {
-                            savedURL = inputURL
-                            dismiss()
-                        }
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .frame(maxWidth: .infinity)
-                    .disabled(!isValidURL || inputURL.isEmpty)
-                }
-            }
-            .padding()
-#if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-#endif
-            .navigationBarBackButtonHidden()
-        }
-    }
-    
-    private func validateURL(_ urlString: String) {
-        guard !urlString.isEmpty else {
-            isValidURL = true
-            errorMessage = ""
-            return
-        }
-        
-        // Add protocol if missing
-        var processedURL = urlString
-        if !urlString.lowercased().hasPrefix("http://") && !urlString.lowercased().hasPrefix("https://") {
-            processedURL = "https://" + urlString
-        }
-        
-        if let url = URL(string: processedURL),
-           url.scheme != nil,
-           url.host != nil {
-            isValidURL = true
-            errorMessage = ""
-            inputURL = processedURL // Update with proper protocol
-        } else {
-            isValidURL = false
-            errorMessage = "Please enter a valid URL"
+        ZStack {
+            Circle()
+                .stroke(Color.gray.opacity(0.2), lineWidth: 2)
+                .frame(width: size, height: size)
+            
+            Circle()
+                .trim(from: 0, to: progress)
+                .stroke(progress >= 0.98 ? Color.green : Color.blue, style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                .frame(width: size, height: size)
+                .rotationEffect(.degrees(-90))
+                .animation(.easeInOut(duration: 0.3), value: progress)
         }
     }
 }
