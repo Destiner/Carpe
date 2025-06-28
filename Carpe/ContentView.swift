@@ -96,7 +96,7 @@ struct ContentView: View {
                     continue
                 }
                 switch (event?.kind) {
-                case let .failed(_):
+                case .failed(_):
                     return
                 case .finished:
                     article.pageData = try? await page.webArchiveData()
