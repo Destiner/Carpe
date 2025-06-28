@@ -12,6 +12,7 @@ import SwiftData
 final class Article {
     var url: URL
     var title: String
+    var pageData: Data?
     var createdAt: Date
     var readAt: Date?
     

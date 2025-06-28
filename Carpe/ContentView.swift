@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import WebKit
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
@@ -79,6 +80,29 @@ struct ContentView: View {
             if let title = await extractTitle(from: url) {
                 await MainActor.run {
                     article.title = title
+                }
+            }
+        }
+        
+        // Save for offline use
+        Task {
+            let page = WebPage()
+            let id = page.load(URLRequest(url: article.url))
+            var event = page.currentNavigationEvent
+            while (true) {
+                try await Task.sleep(nanoseconds: 1_000_000_000)
+                event = page.currentNavigationEvent
+                if (event?.navigationID != id) {
+                    continue
+                }
+                switch (event?.kind) {
+                case let .failed(_):
+                    return
+                case .finished:
+                    article.pageData = try? await page.webArchiveData()
+                    return
+                default:
+                    continue
                 }
             }
         }

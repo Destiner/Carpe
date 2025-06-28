@@ -16,10 +16,18 @@ struct ArticleView: View {
     var body: some View {
         WebView(page)
             .onAppear() {
-                page.load(URLRequest(url: article.url))
+                guard let pageData = article.pageData else {
+                    page.load(URLRequest(url: article.url))
+                    return
+                }
+                page.load(pageData, mimeType: "text/html", characterEncoding: .utf8, baseURL: article.url)
             }
             .onChange(of: article.url) { _, newURL in
-                page.load(URLRequest(url: newURL))
+                guard let pageData = article.pageData else {
+                    page.load(URLRequest(url: newURL))
+                    return
+                }
+                page.load(pageData, mimeType: "text/html", characterEncoding: .utf8, baseURL: newURL)
             }
             .ignoresSafeArea(.all, edges: .bottom)
     }
