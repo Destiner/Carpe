@@ -75,11 +75,19 @@ struct ContentView: View {
         let article = Article(url: url, title: "Loading…")
         modelContext.insert(article)
         
-        // Extract title from HTML
+        // Extract title and cover image from HTML
         Task {
-            if let title = await extractTitle(from: url) {
-                await MainActor.run {
-                    article.title = title
+            async let title = extractTitle(from: url)
+            async let coverImage = extractCoverImage(from: url)
+            
+            let (extractedTitle, extractedCoverImage) = await (title, coverImage)
+            
+            await MainActor.run {
+                if let extractedTitle = extractedTitle {
+                    article.title = extractedTitle
+                }
+                if let extractedCoverImage = extractedCoverImage {
+                    article.coverImageUrl = extractedCoverImage
                 }
             }
         }
@@ -149,6 +157,57 @@ struct ContentView: View {
         return nil
     }
     
+    private func extractCoverImage(from url: URL) async -> String? {
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            guard let html = String(data: data, encoding: .utf8) else { return nil }
+            
+            // Try og:image first
+            let ogImagePattern = #"<meta[^>]*property=["\']og:image["\'][^>]*content=["\']([^"\']*)["\']"#
+            let ogImageRegex = try NSRegularExpression(pattern: ogImagePattern, options: [.caseInsensitive])
+            let range = NSRange(html.startIndex..., in: html)
+            
+            if let match = ogImageRegex.firstMatch(in: html, options: [], range: range),
+               let imageRange = Range(match.range(at: 1), in: html) {
+                let imageUrl = String(html[imageRange]).trimmingCharacters(in: .whitespacesAndNewlines)
+                if !imageUrl.isEmpty {
+                    return resolveImageUrl(imageUrl, baseUrl: url)
+                }
+            }
+            
+            // Fallback to twitter:image
+            let twitterImagePattern = #"<meta[^>]*name=["\']twitter:image["\'][^>]*content=["\']([^"\']*)["\']"#
+            let twitterImageRegex = try NSRegularExpression(pattern: twitterImagePattern, options: [.caseInsensitive])
+            
+            if let match = twitterImageRegex.firstMatch(in: html, options: [], range: range),
+               let imageRange = Range(match.range(at: 1), in: html) {
+                let imageUrl = String(html[imageRange]).trimmingCharacters(in: .whitespacesAndNewlines)
+                if !imageUrl.isEmpty {
+                    return resolveImageUrl(imageUrl, baseUrl: url)
+                }
+            }
+        } catch {
+            print("Error extracting cover image: \(error)")
+        }
+        return nil
+    }
+    
+    private func resolveImageUrl(_ imageUrl: String, baseUrl: URL) -> String {
+        if imageUrl.hasPrefix("http://") || imageUrl.hasPrefix("https://") {
+            return imageUrl
+        } else if imageUrl.hasPrefix("//") {
+            return "https:" + imageUrl
+        } else if imageUrl.hasPrefix("/") {
+            if let host = baseUrl.host {
+                return "\(baseUrl.scheme ?? "https")://\(host)\(imageUrl)"
+            }
+        } else {
+            let baseUrlString = baseUrl.absoluteString.split(separator: "/").dropLast().joined(separator: "/")
+            return "\(baseUrlString)/\(imageUrl)"
+        }
+        return imageUrl
+    }
+    
     private var isValidURL: Bool {
         URL(string: urlString)?.scheme?.hasPrefix("http") == true
     }
@@ -199,12 +258,40 @@ struct ArticleSection: View {
                             }
                         }
                 } label: {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(item.title)
-                            .foregroundStyle(isRead ? .secondary : .primary)
-                        Text(item.url.absoluteString)
-                            .foregroundStyle(.secondary)
-                            .font(.caption)
+                    HStack(spacing: 12) {
+                        if let coverImageUrl = item.coverImageUrl {
+                            AsyncImage(url: URL(string: coverImageUrl)) { image in
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                            } placeholder: {
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(Color.gray.opacity(0.3))
+                            }
+                            .frame(width: 44, height: 44)
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                        } else {
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(Color.gray.opacity(0.2))
+                                .frame(width: 44, height: 44)
+                                .overlay(
+                                    Image(systemName: "doc.text")
+                                        .foregroundColor(.gray)
+                                        .font(.system(size: 16))
+                                )
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(item.title)
+                                .foregroundStyle(isRead ? .secondary : .primary)
+                                .lineLimit(2)
+                            Text(item.url.absoluteString)
+                                .foregroundStyle(.secondary)
+                                .font(.caption)
+                                .lineLimit(1)
+                        }
+                        
+                        Spacer()
                     }
                 }
             }

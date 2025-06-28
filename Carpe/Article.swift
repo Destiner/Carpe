@@ -13,6 +13,7 @@ final class Article {
     var url: URL
     var title: String
     var pageData: Data?
+    var coverImageUrl: String?
     var createdAt: Date
     var readAt: Date?
     
