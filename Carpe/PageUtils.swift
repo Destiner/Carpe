@@ -16,7 +16,7 @@ class PageUtils {
         var event = page.currentNavigationEvent
         while (true) {
             do {
-                try await Task.sleep(nanoseconds: 50_000_000)
+                try await Task.sleep(nanoseconds: 10_000_000)
             } catch {
                 print("Sleep failed")
             }
