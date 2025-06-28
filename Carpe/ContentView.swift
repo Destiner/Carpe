@@ -21,21 +21,25 @@ struct ContentView: View {
     var body: some View {
         NavigationSplitView {
             List {
-                ArticleSection(
-                    title: "To Read",
-                    articles: unreadArticles,
-                    isExpanded: $unreadExpanded,
-                    isRead: false,
-                    onDelete: deleteUnreadItems
-                )
+                if !unreadArticles.isEmpty {
+                    ArticleSection(
+                        title: "To Read",
+                        articles: unreadArticles,
+                        isExpanded: $unreadExpanded,
+                        isRead: false,
+                        onDelete: deleteUnreadItems
+                    )
+                }
                 
-                ArticleSection(
-                    title: "Read",
-                    articles: readArticles,
-                    isExpanded: $readExpanded,
-                    isRead: true,
-                    onDelete: deleteReadItems
-                )
+                if !readArticles.isEmpty {
+                    ArticleSection(
+                        title: "Read",
+                        articles: readArticles,
+                        isExpanded: $readExpanded,
+                        isRead: true,
+                        onDelete: deleteReadItems
+                    )
+                }
             }
 #if os(macOS)
             .navigationSplitViewColumnWidth(min: 180, ideal: 200)
