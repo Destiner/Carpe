@@ -44,6 +44,7 @@ final class Article {
     var coverImageUrl: String?
     var pageState: PageState?
     var readerMode: PageReaderMode?
+    var aiSummary: String?
     var createdAt: Date
     var readAt: Date?
     

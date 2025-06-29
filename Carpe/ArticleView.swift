@@ -9,18 +9,22 @@ import Foundation
 import SwiftUI
 import WebKit
 import Reeeed
+import FoundationModels
+
+enum ViewMode {
+    case web, reader, ai
+}
 
 struct ArticleView: View {
     let article: Article
     @State private var page = WebPage()
     @State private var scrollPosition = ScrollPosition()
-    @State private var isReaderMode = false
+    @State private var viewMode: ViewMode = .web
     
     var body: some View {
         Group {
-            if isReaderMode {
-                ReaderView(article: article)
-            } else {
+            switch viewMode {
+            case .web:
                 WebView(page)
                     .onAppear() {
                         Task {
@@ -41,17 +45,28 @@ struct ArticleView: View {
                             article.pageState = PageState(height: pageState.height, scrollY: newValue)
                         }
                     }
+            case .reader:
+                ReaderView(article: article)
+            case .ai:
+                AIView(article: article)
             }
         }
         .ignoresSafeArea(.all, edges: .bottom)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button(action: {
-                    isReaderMode.toggle()
+                    switch viewMode {
+                    case .web:
+                        viewMode = .reader
+                    case .reader:
+                        viewMode = .ai
+                    case .ai:
+                        viewMode = .web
+                    }
                 }) {
                     Label(
-                        isReaderMode ? "Web View" : "Reader Mode",
-                        systemImage: isReaderMode ? "safari" : "doc.text"
+                        viewMode == .web ? "Reader Mode" : viewMode == .reader ? "AI Mode" : "Web View",
+                        systemImage: viewMode == .web ? "doc.text" : viewMode == .reader ? "sparkles" : "safari"
                     )
                 }
             }
