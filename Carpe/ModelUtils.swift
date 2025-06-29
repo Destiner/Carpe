@@ -8,6 +8,21 @@
 import Foundation
 import FoundationModels
 
+extension String {
+    func chunked(into size: Int) -> [String] {
+        var chunks: [String] = []
+        var startIndex = self.startIndex
+        
+        while startIndex < self.endIndex {
+            let endIndex = self.index(startIndex, offsetBy: size, limitedBy: self.endIndex) ?? self.endIndex
+            chunks.append(String(self[startIndex..<endIndex]))
+            startIndex = endIndex
+        }
+        
+        return chunks
+    }
+}
+
 struct ModelUtils {
     private static let model = SystemLanguageModel.default
     
@@ -24,18 +39,46 @@ struct ModelUtils {
             throw LLMError.modelUnavailable(model.availability)
         }
         
-        // Trim content to 15000 characters (~3500 tokens)
-        let trimmedContent = String(content.prefix(15000))
-        
-        let session = LanguageModelSession {
-            "Summarize this article in 1-3 paragraphs. Focus on the main points and key insights."
+        // If content is short enough, process normally
+        if content.count <= 15000 {
+            let session = LanguageModelSession {
+                "Summarize this article in 1-3 paragraphs. Focus on the main points and key insights."
+            }
+            let response = try await session.respond {
+                content
+            }
+            return response.content
         }
         
-        let response = try await session.respond {
-            trimmedContent
+        // For longer content, use chunking approach
+        return try await generateChunkedSummary(from: content)
+    }
+    
+    private static func generateChunkedSummary(from content: String) async throws -> String {
+        let chunkSize = 15000
+        let chunks = content.chunked(into: chunkSize)
+        var chunkSummaries: [String] = []
+        
+        // Process chunks sequentially to avoid overwhelming the device
+        for (index, chunk) in chunks.enumerated() {
+            let session = LanguageModelSession {
+                "Summarize this section of an article (part \(index + 1) of \(chunks.count)) in 1-2 paragraphs. Focus on the key points:"
+            }
+            let response = try await session.respond {
+                chunk
+            }
+            chunkSummaries.append(response.content)
         }
         
-        return response.content
+        // Generate meta-summary from chunk summaries
+        let combinedSummaries = chunkSummaries.joined(separator: "\n\n")
+        let metaSession = LanguageModelSession {
+            "These are summaries of different sections of a long article. Create a cohesive summary in 2-3 paragraphs that captures the overall main points and key insights:"
+        }
+        let metaResponse = try await metaSession.respond {
+            combinedSummaries
+        }
+        return metaResponse.content
     }
     
     enum LLMError: LocalizedError {
