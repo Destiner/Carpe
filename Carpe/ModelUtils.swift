@@ -23,7 +23,18 @@ extension String {
     }
 }
 
+struct SummaryParams {
+    let paragraphsMin: Int
+    let paragraphsMax: Int
+    
+    init(_ paragraphsMin: Int = 1, _ paragraphsMax: Int = 3) {
+        self.paragraphsMin = paragraphsMin
+        self.paragraphsMax = paragraphsMax
+    }
+}
+
 struct ModelUtils {
+    private static let CHUNK_SIZE = 10_000
     private static let model = SystemLanguageModel.default
     
     static var isAvailable: Bool {
@@ -39,12 +50,14 @@ struct ModelUtils {
             throw LLMError.modelUnavailable(model.availability)
         }
         
+        let params = getSummaryParams(content: content)
+        
         // If content is short enough, process normally
-        if content.count <= 15000 {
+        if content.count <= CHUNK_SIZE {
             let session = LanguageModelSession {
-                "Summarize this article in 1-3 paragraphs. Focus on the main points and key insights."
+                "Summarize this article in \(params.paragraphsMin)-\(params.paragraphsMax) paragraphs. Focus on the main points and key insights."
             }
-            let response = try await session.respond {
+            let response = try await session.respond(options: .init(maximumResponseTokens: 1_000)) {
                 content
             }
             return response.content
@@ -55,30 +68,46 @@ struct ModelUtils {
     }
     
     private static func generateChunkedSummary(from content: String) async throws -> String {
-        let chunkSize = 15000
-        let chunks = content.chunked(into: chunkSize)
+        let chunks = content.chunked(into: CHUNK_SIZE)
         var chunkSummaries: [String] = []
         
         // Process chunks sequentially to avoid overwhelming the device
         for (index, chunk) in chunks.enumerated() {
             let session = LanguageModelSession {
-                "Summarize this section of an article (part \(index + 1) of \(chunks.count)) in 1-2 paragraphs. Focus on the key points:"
+                "Summarize this section of an article (part \(index + 1) of \(chunks.count)) in 1-2 short paragraphs. Focus on the key points:"
             }
-            let response = try await session.respond {
+            let response = try await session.respond(options: .init(maximumResponseTokens: 500)) {
                 chunk
             }
             chunkSummaries.append(response.content)
         }
         
         // Generate meta-summary from chunk summaries
+        let params = getSummaryParams(content: content)
         let combinedSummaries = chunkSummaries.joined(separator: "\n\n")
         let metaSession = LanguageModelSession {
-            "These are summaries of different sections of a long article. Create a cohesive summary in 2-3 paragraphs that captures the overall main points and key insights:"
+            "These are summaries of different sections of a long article. Create a cohesive summary in \(params.paragraphsMin)-\(params.paragraphsMax) paragraphs that captures the overall main points and key insights:"
         }
-        let metaResponse = try await metaSession.respond {
+        let metaResponse = try await metaSession.respond(options: .init(maximumResponseTokens: 1_000)) {
             combinedSummaries
         }
         return metaResponse.content
+    }
+    
+    /// Dynamic summary shape based on the content's size
+    private static func getSummaryParams(content: String) -> SummaryParams {
+        switch content.count {
+        case 0..<5_000:
+            SummaryParams(1, 2)
+        case 5_000..<10_000:
+            SummaryParams(2, 3)
+        case 10_000..<20_000:
+            SummaryParams(2, 4)
+        case 20_000..<40_000:
+            SummaryParams(3, 5)
+        default:
+            SummaryParams(3, 6)
+        }
     }
     
     enum LLMError: LocalizedError {
