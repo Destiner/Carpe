@@ -82,7 +82,8 @@ struct ContentView: View {
         // Save for offline use and extract metadata
         Task {
             let page = WebPage()
-            let isLoaded = await PageUtils.waitPageLoad(page: page, url: article.url)
+            let id = page.load(URLRequest(url: article.url))
+            let isLoaded = await PageUtils.waitPageLoad(page: page, url: article.url, eventId: id)
             if (isLoaded) {
                 article.title = page.title
                 article.coverImageUrl = await PageUtils.getPageCoverImage(page: page)

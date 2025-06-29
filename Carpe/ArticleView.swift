@@ -59,12 +59,13 @@ struct ArticleView: View {
     }
     
     private func loadPage(url: URL) async -> Void {
+        var eventId: WebPage.NavigationID? = nil
         if let pageData = article.pageData {
-            page.load(pageData, mimeType: "text/html", characterEncoding: .utf8, baseURL: url)
+            eventId = page.load(pageData, mimeType: "text/html", characterEncoding: .utf8, baseURL: url)
         } else {
-            page.load(URLRequest(url: url))
+            eventId = page.load(URLRequest(url: url))
         }
-        let isLoaded = await PageUtils.waitPageLoad(page: page, url: url)
+        let isLoaded = await PageUtils.waitPageLoad(page: page, url: url, eventId: eventId)
         if (isLoaded) {
             let pageHeight = await PageUtils.getPageHeight(page: page)
             let pageState = article.pageState ?? PageState(height: 0, scrollY: 0)

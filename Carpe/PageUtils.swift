@@ -12,8 +12,7 @@ import Reeeed
 @MainActor
 class PageUtils {
     // TODO rewrite with Observations
-    static func waitPageLoad(page: WebPage, url: URL) async -> Bool {
-        let id = page.load(URLRequest(url: url))
+    static func waitPageLoad(page: WebPage, url: URL, eventId: WebPage.NavigationID?) async -> Bool {
         var event = page.currentNavigationEvent
         while (true) {
             do {
@@ -22,7 +21,7 @@ class PageUtils {
                 print("Sleep failed")
             }
             event = page.currentNavigationEvent
-            if (event?.navigationID != id) {
+            if (event?.navigationID != eventId) {
                 continue
             }
             switch (event?.kind) {
