@@ -8,7 +8,6 @@
 import SwiftUI
 import SwiftData
 import WebKit
-import Reeeed
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
@@ -93,17 +92,10 @@ struct ContentView: View {
                 
                 // Extract and store reader mode data
                 do {
-                    let result = try await Reeeed.fetchAndExtractContent(fromURL: article.url, theme: .init())
-                    article.readerMode = PageReaderMode(
-                        title: result.title,
-                        author: result.extracted.author,
-                        excerpt: result.extracted.excerpt,
-                        content: result.extracted.content,
-                        html: result.styledHTML
-                    )
+                    article.readerMode = try await PageUtils.extractReaderModeData(fromURL: article.url)
                     
                     // Use reader mode title if available and better than page title
-                    if let readerTitle = result.title, !readerTitle.isEmpty {
+                    if let readerTitle = article.readerMode?.title, !readerTitle.isEmpty {
                         article.title = readerTitle
                     }
                 } catch {

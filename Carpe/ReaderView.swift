@@ -7,7 +7,6 @@
 
 import SwiftUI
 import WebKit
-import Reeeed
 
 struct ReaderView: View {
     let article: Article
@@ -61,7 +60,6 @@ struct ReaderView: View {
         
         // First try to use cached reader mode data
         if let readerMode = article.readerMode, let cachedHTML = readerMode.html {
-            print("[Reader mode] using cached data ")
             await MainActor.run {
                 readerPage.load(html: cachedHTML, baseURL: article.url)
                 isLoading = false
@@ -69,25 +67,19 @@ struct ReaderView: View {
             return
         }
         
-        print("[Reader mode] fallback — fetching the page content.")
-        
         // Fallback to fetching content if no cached version
         do {
-            let result = try await Reeeed.fetchAndExtractContent(fromURL: article.url, theme: .init())
+            let readerMode = try await PageUtils.extractReaderModeData(fromURL: article.url)
             
             await MainActor.run {
                 // Load the styled HTML into our WebView
-                readerPage.load(html: result.styledHTML, baseURL: result.baseURL)
+                if let html = readerMode.html {
+                    readerPage.load(html: html, baseURL: article.url)
+                }
                 isLoading = false
                 
                 // Cache the result for future use
-                article.readerMode = PageReaderMode(
-                    title: result.title,
-                    author: result.extracted.author,
-                    excerpt: result.extracted.excerpt,
-                    content: result.extracted.content,
-                    html: result.styledHTML
-                )
+                article.readerMode = readerMode
             }
         } catch {
             await MainActor.run {

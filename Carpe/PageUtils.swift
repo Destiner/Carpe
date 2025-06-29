@@ -7,6 +7,7 @@
 
 import Foundation
 import WebKit
+import Reeeed
 
 @MainActor
 class PageUtils {
@@ -70,5 +71,17 @@ class PageUtils {
         
         let height = try? await page.callJavaScript(heightScript) as? Double
         return height
+    }
+    
+    static func extractReaderModeData(fromURL url: URL) async throws -> PageReaderMode {
+        let result = try await Reeeed.fetchAndExtractContent(fromURL: url, theme: .init())
+        
+        return PageReaderMode(
+            title: result.title,
+            author: result.extracted.author,
+            excerpt: result.extracted.excerpt,
+            content: result.extracted.content,
+            html: result.styledHTML
+        )
     }
 }
