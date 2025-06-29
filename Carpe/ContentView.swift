@@ -91,10 +91,21 @@ struct ContentView: View {
                 // Store page data for offline use
                 article.pageData = try? await page.webArchiveData()
                 
-                // Extract and store reader mode HTML
+                // Extract and store reader mode data
                 do {
                     let result = try await Reeeed.fetchAndExtractContent(fromURL: article.url, theme: .init())
-                    article.readerModeHTML = result.styledHTML
+                    article.readerMode = PageReaderMode(
+                        title: result.title,
+                        author: result.extracted.author,
+                        excerpt: result.extracted.excerpt,
+                        content: result.extracted.content,
+                        html: result.styledHTML
+                    )
+                    
+                    // Use reader mode title if available and better than page title
+                    if let readerTitle = result.title, !readerTitle.isEmpty {
+                        article.title = readerTitle
+                    }
                 } catch {
                     print("Failed to extract reader mode content: \(error)")
                 }

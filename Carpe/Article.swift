@@ -20,13 +20,30 @@ class PageState {
 }
 
 @Model
+class PageReaderMode {
+    var title: String?
+    var author: String?
+    var excerpt: String?
+    var content: String?
+    var html: String?
+    
+    init(title: String? = nil, author: String? = nil, excerpt: String? = nil, content: String? = nil, html: String? = nil) {
+        self.title = title
+        self.author = author
+        self.excerpt = excerpt
+        self.content = content
+        self.html = html
+    }
+}
+
+@Model
 final class Article {
     var url: URL
     var title: String
     var pageData: Data?
     var coverImageUrl: String?
     var pageState: PageState?
-    var readerModeHTML: String?
+    var readerMode: PageReaderMode?
     var createdAt: Date
     var readAt: Date?
     

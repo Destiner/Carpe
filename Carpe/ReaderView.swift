@@ -59,8 +59,8 @@ struct ReaderView: View {
         isLoading = true
         loadingError = nil
         
-        // First try to use cached reader mode HTML
-        if let cachedHTML = article.readerModeHTML {
+        // First try to use cached reader mode data
+        if let readerMode = article.readerMode, let cachedHTML = readerMode.html {
             print("[Reader mode] using cached data ")
             await MainActor.run {
                 readerPage.load(html: cachedHTML, baseURL: article.url)
@@ -81,7 +81,13 @@ struct ReaderView: View {
                 isLoading = false
                 
                 // Cache the result for future use
-                article.readerModeHTML = result.styledHTML
+                article.readerMode = PageReaderMode(
+                    title: result.title,
+                    author: result.extracted.author,
+                    excerpt: result.extracted.excerpt,
+                    content: result.extracted.content,
+                    html: result.styledHTML
+                )
             }
         } catch {
             await MainActor.run {
