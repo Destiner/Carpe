@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		519BF2242E0F59CD0007D560 /* Carpe.icon in Resources */ = {isa = PBXBuildFile; fileRef = 519BF2232E0F59CD0007D560 /* Carpe.icon */; };
+		51FF7AC72E117CE700577576 /* Reeeed in Frameworks */ = {isa = PBXBuildFile; productRef = 51FF7AC62E117CE700577576 /* Reeeed */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -57,6 +58,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				51FF7AC72E117CE700577576 /* Reeeed in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -118,6 +120,7 @@
 			);
 			name = Carpe;
 			packageProductDependencies = (
+				51FF7AC62E117CE700577576 /* Reeeed */,
 			);
 			productName = Carpe;
 			productReference = 5154CF7F2E0F249500F5E181 /* Carpe.app */;
@@ -201,6 +204,9 @@
 			);
 			mainGroup = 5154CF762E0F249500F5E181;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				51FF7AC52E117CE700577576 /* XCRemoteSwiftPackageReference "reeeed" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 5154CF802E0F249500F5E181 /* Products */;
 			projectDirPath = "";
@@ -636,6 +642,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		51FF7AC52E117CE700577576 /* XCRemoteSwiftPackageReference "reeeed" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/nate-parrott/reeeed";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		51FF7AC62E117CE700577576 /* Reeeed */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 51FF7AC52E117CE700577576 /* XCRemoteSwiftPackageReference "reeeed" */;
+			productName = Reeeed;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 5154CF772E0F249500F5E181 /* Project object */;
 }

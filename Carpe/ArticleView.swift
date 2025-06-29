@@ -8,34 +8,54 @@
 import Foundation
 import SwiftUI
 import WebKit
+import Reeeed
 
 struct ArticleView: View {
     let article: Article
     @State private var page = WebPage()
     @State private var scrollPosition = ScrollPosition()
+    @State private var isReaderMode = false
     
     var body: some View {
-        WebView(page)
-            .onAppear() {
-                Task {
-                    await loadPage(url: article.url)
+        Group {
+            if isReaderMode {
+                ReaderView(article: article)
+            } else {
+                WebView(page)
+                    .onAppear() {
+                        Task {
+                            await loadPage(url: article.url)
+                        }
+                    }
+                    .onChange(of: article.url) { _, newURL in
+                        Task {
+                            await loadPage(url: newURL)
+                        }
+                    }
+                    .webViewScrollPosition($scrollPosition)
+                    .webViewOnScrollGeometryChange(for: CGFloat.self, of: \.contentOffset.y) { _, newValue in
+                        if (newValue == 0) {
+                            return
+                        }
+                        if let pageState = article.pageState {
+                            article.pageState = PageState(height: pageState.height, scrollY: newValue)
+                        }
+                    }
+            }
+        }
+        .ignoresSafeArea(.all, edges: .bottom)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button(action: {
+                    isReaderMode.toggle()
+                }) {
+                    Label(
+                        isReaderMode ? "Web View" : "Reader Mode",
+                        systemImage: isReaderMode ? "safari" : "doc.text"
+                    )
                 }
             }
-            .onChange(of: article.url) { _, newURL in
-                Task {
-                    await loadPage(url: newURL)
-                }
-            }
-            .webViewScrollPosition($scrollPosition)
-            .webViewOnScrollGeometryChange(for: CGFloat.self, of: \.contentOffset.y) { _, newValue in
-                if (newValue == 0) {
-                    return
-                }
-                if let pageState = article.pageState {
-                    article.pageState = PageState(height: pageState.height, scrollY: newValue)
-                }
-            }
-            .ignoresSafeArea(.all, edges: .bottom)
+        }
     }
     
     private func loadPage(url: URL) async -> Void {

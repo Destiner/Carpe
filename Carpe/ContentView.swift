@@ -8,6 +8,7 @@
 import SwiftUI
 import SwiftData
 import WebKit
+import Reeeed
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
@@ -89,6 +90,14 @@ struct ContentView: View {
 
                 // Store page data for offline use
                 article.pageData = try? await page.webArchiveData()
+                
+                // Extract and store reader mode HTML
+                do {
+                    let result = try await Reeeed.fetchAndExtractContent(fromURL: article.url, theme: .init())
+                    article.readerModeHTML = result.styledHTML
+                } catch {
+                    print("Failed to extract reader mode content: \(error)")
+                }
             }
         }
         

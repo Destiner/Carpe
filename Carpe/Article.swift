@@ -26,6 +26,7 @@ final class Article {
     var pageData: Data?
     var coverImageUrl: String?
     var pageState: PageState?
+    var readerModeHTML: String?
     var createdAt: Date
     var readAt: Date?
     
