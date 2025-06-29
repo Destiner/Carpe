@@ -13,7 +13,6 @@ struct AIView: View {
     
     @State private var isLoading = false
     @State private var loadingError: String?
-    private let model = SystemLanguageModel.default
     
     var body: some View {
         ScrollView {
@@ -70,7 +69,7 @@ struct AIView: View {
                                 .lineSpacing(4)
                         }
                     } else {
-                        switch model.availability {
+                        switch ModelUtils.availabilityStatus {
                         case .available:
                             EmptyView()
                         case .unavailable(.appleIntelligenceNotEnabled):
@@ -145,7 +144,7 @@ struct AIView: View {
         }
         .onAppear {
             // Auto-generate summary if we have reader content but no summary yet
-            if article.aiSummary == nil && article.readerMode?.content != nil && model.availability == .available {
+            if article.aiSummary == nil && article.readerMode?.content != nil && ModelUtils.isAvailable {
                 Task {
                     await generateSummary()
                 }
@@ -154,7 +153,6 @@ struct AIView: View {
     }
     
     private func generateSummary() async {
-        guard model.availability == .available else { return }
         guard let readerContent = article.readerMode?.content else {
             loadingError = "No reader content available. Please switch to Reader Mode first."
             return
@@ -164,19 +162,10 @@ struct AIView: View {
         loadingError = nil
         
         do {
-            // Trim content to 15000 characters (~3500 tokens)
-            let trimmedContent = String(readerContent.prefix(15000))
-            
-            let session = LanguageModelSession {
-                "Summarize this article in 1-3 paragraphs. Focus on the main points and key insights."
-            }
-            
-            let response = try await session.respond {
-                trimmedContent
-            }
+            let summary = try await ModelUtils.generateSummary(from: readerContent)
             
             await MainActor.run {
-                article.aiSummary = response.content
+                article.aiSummary = summary
                 isLoading = false
             }
         } catch {

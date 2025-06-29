@@ -99,6 +99,15 @@ struct ContentView: View {
                     if let readerTitle = article.readerMode?.title, !readerTitle.isEmpty {
                         article.title = readerTitle
                     }
+                    
+                    // Generate AI summary if reader content is available and LLM is available
+                    if let readerContent = article.readerMode?.content, ModelUtils.isAvailable {
+                        do {
+                            article.aiSummary = try await ModelUtils.generateSummary(from: readerContent)
+                        } catch {
+                            print("Failed to generate AI summary: \(error)")
+                        }
+                    }
                 } catch {
                     print("Failed to extract reader mode content: \(error)")
                 }

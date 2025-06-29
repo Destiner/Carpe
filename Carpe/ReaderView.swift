@@ -1,5 +1,5 @@
 //
-//  CustomReaderView.swift
+//  ReaderView.swift
 //  Carpe
 //
 //  Created by Timur Badretdinov on 29/06/2025.
