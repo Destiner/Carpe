@@ -110,6 +110,52 @@ struct ModelUtils {
         }
     }
     
+    static func answer(content: String, question: String) async throws -> String {
+        guard model.availability == .available else {
+            throw LLMError.modelUnavailable(model.availability)
+        }
+        
+        // If content is short enough, process normally
+        if content.count <= CHUNK_SIZE {
+            let session = LanguageModelSession {
+                "Based on the following article content, answer the user's question. Be concise and accurate. If the answer cannot be found in the content, say so clearly."
+            }
+            let response = try await session.respond(options: .init(maximumResponseTokens: 500)) {
+                "Question: \(question)\n\nArticle content:\n\(content)"
+            }
+            return response.content
+        }
+        
+        // For longer content, use chunking approach
+        return try await generateChunkedAnswer(content: content, question: question)
+    }
+    
+    private static func generateChunkedAnswer(content: String, question: String) async throws -> String {
+        let chunks = content.chunked(into: CHUNK_SIZE)
+        var chunkAnswers: [String] = []
+        
+        // Process chunks sequentially to avoid overwhelming the device
+        for (index, chunk) in chunks.enumerated() {
+            let session = LanguageModelSession {
+                "Based on this section of an article (part \(index + 1) of \(chunks.count)), try to answer the user's question. If this section doesn't contain relevant information, say 'No relevant information found in this section.'"
+            }
+            let response = try await session.respond(options: .init(maximumResponseTokens: 300)) {
+                "Question: \(question)\n\nArticle section:\n\(chunk)"
+            }
+            chunkAnswers.append(response.content)
+        }
+        
+        // Synthesize final answer from chunk answers
+        let combinedAnswers = chunkAnswers.joined(separator: "\n\n")
+        let synthesisSession = LanguageModelSession {
+            "These are answers from different sections of a long article for the same question. Synthesize a comprehensive and coherent final answer. If no relevant information was found in any section, say so clearly."
+        }
+        let finalResponse = try await synthesisSession.respond(options: .init(maximumResponseTokens: 500)) {
+            "Question: \(question)\n\nAnswers from different sections:\n\(combinedAnswers)"
+        }
+        return finalResponse.content
+    }
+    
     enum LLMError: LocalizedError {
         case modelUnavailable(SystemLanguageModel.Availability)
         

@@ -8,11 +8,21 @@
 import SwiftUI
 import FoundationModels
 
+struct ChatMessage: Identifiable {
+    let id = UUID()
+    let text: String
+    let isUser: Bool
+    let timestamp = Date()
+}
+
 struct AIView: View {
     let article: Article
     
     @State private var isLoading = false
     @State private var loadingError: String?
+    @State private var messages: [ChatMessage] = []
+    @State private var questionText = ""
+    @State private var isAnswering = false
     
     var body: some View {
         ScrollView {
@@ -139,6 +149,58 @@ struct AIView: View {
                         }
                     }
                 }
+                
+                // Chat interface
+                if article.aiSummary != nil && ModelUtils.isAvailable {
+                    Divider()
+                        .padding(.top, 16)
+                    
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Q&A")
+                            .font(.headline)
+                            .foregroundStyle(.primary)
+                        
+                        // Chat messages
+                        if !messages.isEmpty {
+                            LazyVStack(alignment: .leading, spacing: 8) {
+                                ForEach(messages) { message in
+                                    ChatBubble(message: message)
+                                }
+                            }
+                            .padding(.vertical, 8)
+                        }
+                        
+                        if isAnswering {
+                            HStack {
+                                Text("Thinking...")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding(.top, 4)
+                        }
+                        
+                        // Input area
+                        HStack {
+                            TextField("Ask a question...", text: $questionText)
+                                .textFieldStyle(.roundedBorder)
+                                .onSubmit {
+                                    if !questionText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                        Task {
+                                            await askQuestion()
+                                        }
+                                    }
+                                }
+                                .disabled(isAnswering)
+                            
+                            Button("Ask") {
+                                Task {
+                                    await askQuestion()
+                                }
+                            }
+                            .disabled(questionText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isAnswering)
+                        }
+                    }
+                }
             }
             .padding()
         }
@@ -172,6 +234,63 @@ struct AIView: View {
             await MainActor.run {
                 loadingError = error.localizedDescription
                 isLoading = false
+            }
+        }
+    }
+    
+    private func askQuestion() async {
+        guard let readerContent = article.readerMode?.content,
+              !questionText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return
+        }
+        
+        let question = questionText.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        await MainActor.run {
+            messages.append(ChatMessage(text: question, isUser: true))
+            questionText = ""
+            isAnswering = true
+        }
+        
+        do {
+            let answer = try await ModelUtils.answer(content: readerContent, question: question)
+            
+            await MainActor.run {
+                messages.append(ChatMessage(text: answer, isUser: false))
+                isAnswering = false
+            }
+        } catch {
+            await MainActor.run {
+                messages.append(ChatMessage(text: "Sorry, I couldn't answer your question: \(error.localizedDescription)", isUser: false))
+                isAnswering = false
+            }
+        }
+    }
+}
+
+struct ChatBubble: View {
+    let message: ChatMessage
+    
+    var body: some View {
+        HStack {
+            if message.isUser {
+                Spacer()
+                Text(message.text)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(Color.accentColor)
+                    .foregroundColor(.white)
+                    .cornerRadius(16)
+                    .frame(maxWidth: .infinity * 0.8, alignment: .trailing)
+            } else {
+                Text(message.text)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(Color.secondary.opacity(0.4))
+                    .foregroundColor(.primary)
+                    .cornerRadius(16)
+                    .frame(maxWidth: .infinity * 0.8, alignment: .leading)
+                Spacer()
             }
         }
     }
