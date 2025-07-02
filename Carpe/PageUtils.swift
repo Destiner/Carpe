@@ -79,7 +79,7 @@ class PageUtils {
             title: result.title,
             author: result.extracted.author,
             excerpt: result.extracted.excerpt,
-            content: result.extracted.content,
+            content: result.extracted.extractPlainText,
             html: result.html
         )
     }
