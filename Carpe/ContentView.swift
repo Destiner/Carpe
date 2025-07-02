@@ -225,8 +225,34 @@ struct ArticleSection: View {
                         }
                     }
                 }
+                .contextMenu {
+                    Button("Delete", role: .destructive) {
+                        guard let indexToDelete = articles.firstIndex(where: { $0.id == item.id }) else {
+                            return
+                        }
+                        onDelete(IndexSet(integer: indexToDelete))
+                    }
+                }
             }
             .onDelete(perform: onDelete)
+            .deleteDisabled(false)
+#if os(macOS)
+            .contextMenu(forSelectionType: Article.self) { selection in
+                if selection.isEmpty {
+                    Button("Delete", role: .destructive) {
+                        // This won't be called, but keeps the menu structure
+                    }
+                    .disabled(true)
+                } else {
+                    Button("Delete", role: .destructive) {
+                        let indicesToDelete = IndexSet(selection.compactMap { article in
+                            articles.firstIndex { $0.id == article.id }
+                        })
+                        onDelete(indicesToDelete)
+                    }
+                }
+            }
+#endif
         } header: {
             HStack {
                 Text(title)
