@@ -34,6 +34,7 @@ struct SummaryParams {
 }
 
 struct ModelUtils {
+    private static let MAX_CONTENT_SIZE = 15_000
     private static let CHUNK_SIZE = 10_000
     private static let model = SystemLanguageModel.default
     
@@ -53,7 +54,7 @@ struct ModelUtils {
         let params = getSummaryParams(content: content)
         
         // If content is short enough, process normally
-        if content.count <= CHUNK_SIZE {
+        if content.count <= MAX_CONTENT_SIZE {
             let session = LanguageModelSession {
                 "Summarize this article in \(params.paragraphsMin)-\(params.paragraphsMax) paragraphs. Focus on the main points and key insights."
             }
@@ -116,7 +117,7 @@ struct ModelUtils {
         }
         
         // If content is short enough, process normally
-        if content.count <= CHUNK_SIZE {
+        if content.count <= MAX_CONTENT_SIZE {
             let session = LanguageModelSession {
                 "Based on the following article content, answer the user's question. Be concise and accurate. If the answer cannot be found in the content, say so clearly."
             }
