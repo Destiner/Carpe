@@ -73,14 +73,14 @@ class PageUtils {
     }
     
     static func extractReaderModeData(fromURL url: URL) async throws -> PageReaderMode {
-        let result = try await Reeeed.fetchAndExtractContent(fromURL: url, theme: .init())
+        let result = try await Reeeed.fetchAndExtractContent(fromURL: url)
         
         return PageReaderMode(
             title: result.title,
             author: result.extracted.author,
             excerpt: result.extracted.excerpt,
             content: result.extracted.content,
-            html: result.styledHTML
+            html: result.html
         )
     }
 }

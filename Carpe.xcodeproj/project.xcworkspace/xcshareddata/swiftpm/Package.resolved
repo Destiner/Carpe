@@ -15,8 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/nate-parrott/reeeed",
       "state" : {
-        "revision" : "567e2f50592f8a5fe41e9ff64784b42c77f35433",
-        "version" : "1.0.1"
+        "branch" : "main",
+        "revision" : "7989f05206bd263d81cdb6324ca524cbe64b2c77"
       }
     },
     {
