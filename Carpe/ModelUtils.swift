@@ -98,16 +98,16 @@ struct ModelUtils {
     /// Dynamic summary shape based on the content's size
     private static func getSummaryParams(content: String) -> SummaryParams {
         switch content.count {
-        case 0..<5_000:
-            SummaryParams(1, 2)
-        case 5_000..<10_000:
-            SummaryParams(2, 3)
+        case 0..<10_000:
+            SummaryParams(1, 1)
         case 10_000..<20_000:
-            SummaryParams(2, 4)
+            SummaryParams(1, 2)
         case 20_000..<40_000:
-            SummaryParams(3, 5)
+            SummaryParams(2, 3)
+        case 40_000..<60_000:
+            SummaryParams(2, 4)
         default:
-            SummaryParams(3, 6)
+            SummaryParams(3, 5)
         }
     }
     
