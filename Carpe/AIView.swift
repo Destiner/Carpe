@@ -79,74 +79,7 @@ struct AIView: View {
                                 .lineSpacing(4)
                         }
                     } else {
-                        switch ModelUtils.availabilityStatus {
-                        case .available:
-                            EmptyView()
-                        case .unavailable(.appleIntelligenceNotEnabled):
-                            VStack {
-                                Image(systemName: "brain.head.profile")
-                                    .font(.largeTitle)
-                                    .foregroundStyle(.secondary)
-                                Text("Apple Intelligence not enabled")
-                                    .font(.headline)
-                                    .padding(.top, 8)
-                                Text("Enable Apple Intelligence in Settings to use AI summaries")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                    .multilineTextAlignment(.center)
-                                    .padding(.horizontal)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 40)
-                        case .unavailable(.modelNotReady):
-                            VStack {
-                                Image(systemName: "brain.head.profile")
-                                    .font(.largeTitle)
-                                    .foregroundStyle(.secondary)
-                                Text("AI model not ready")
-                                    .font(.headline)
-                                    .padding(.top, 8)
-                                Text("Please try again later")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                    .multilineTextAlignment(.center)
-                                    .padding(.horizontal)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 40)
-                        case .unavailable(.deviceNotEligible):
-                            VStack {
-                                Image(systemName: "brain.head.profile")
-                                    .font(.largeTitle)
-                                    .foregroundStyle(.secondary)
-                                Text("Device not eligible")
-                                    .font(.headline)
-                                    .padding(.top, 8)
-                                Text("This device doesn't support Apple Intelligence")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                    .multilineTextAlignment(.center)
-                                    .padding(.horizontal)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 40)
-                        case .unavailable(_):
-                            VStack {
-                                Image(systemName: "brain.head.profile")
-                                    .font(.largeTitle)
-                                    .foregroundStyle(.secondary)
-                                Text("Device not eligible")
-                                    .font(.headline)
-                                    .padding(.top, 8)
-                                Text("This device doesn't support Apple Intelligence")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                    .multilineTextAlignment(.center)
-                                    .padding(.horizontal)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 40)
-                        }
+                        EmptyView()
                     }
                 }
                 

@@ -59,14 +59,14 @@ struct ArticleView: View {
                     case .web:
                         viewMode = .reader
                     case .reader:
-                        viewMode = .ai
+                        viewMode = ModelUtils.isAvailable ? .ai : .web
                     case .ai:
                         viewMode = .web
                     }
                 }) {
                     Label(
-                        viewMode == .web ? "Reader Mode" : viewMode == .reader ? "AI Mode" : "Web View",
-                        systemImage: viewMode == .web ? "doc.text" : viewMode == .reader ? "sparkles" : "safari"
+                        viewMode == .web ? "Reader Mode" : viewMode == .reader ? (ModelUtils.isAvailable ? "AI Mode" : "Web View") : "Web View",
+                        systemImage: viewMode == .web ? "doc.text" : viewMode == .reader ? (ModelUtils.isAvailable ? "sparkles" : "safari") : "safari"
                     )
                 }
             }
