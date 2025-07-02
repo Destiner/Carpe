@@ -36,6 +36,7 @@ struct SummaryParams {
 struct ModelUtils {
     private static let MAX_CONTENT_SIZE = 15_000
     private static let CHUNK_SIZE = 10_000
+    private static let summarizerModel = SystemLanguageModel.default
     private static let model = SystemLanguageModel.default
     
     static var isAvailable: Bool {
@@ -140,7 +141,7 @@ struct ModelUtils {
             let session = LanguageModelSession {
                 "Based on this section of an article (part \(index + 1) of \(chunks.count)), try to answer the user's question. If this section doesn't contain relevant information, say 'No relevant information found in this section.'"
             }
-            let response = try await session.respond(options: .init(maximumResponseTokens: 300)) {
+            let response = try await session.respond(options: .init(maximumResponseTokens: 500)) {
                 "Question: \(question)\n\nArticle section:\n\(chunk)"
             }
             chunkAnswers.append(response.content)
@@ -151,7 +152,7 @@ struct ModelUtils {
         let synthesisSession = LanguageModelSession {
             "These are answers from different sections of a long article for the same question. Synthesize a comprehensive and coherent final answer. If no relevant information was found in any section, say so clearly."
         }
-        let finalResponse = try await synthesisSession.respond(options: .init(maximumResponseTokens: 500)) {
+        let finalResponse = try await synthesisSession.respond(options: .init(maximumResponseTokens: 1000)) {
             "Question: \(question)\n\nAnswers from different sections:\n\(combinedAnswers)"
         }
         return finalResponse.content
