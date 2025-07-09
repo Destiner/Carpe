@@ -8,4 +8,6 @@ Uses WebKit to store page web archive data for offline use. Uses [Reeeed](https:
 
 Requires iOS/macOS 26.
 
+[Blog post](https://destiner.io/blog/post/foundation-models-basic-prompting-ios-reader-app/)
+
 https://github.com/user-attachments/assets/064d2dee-95f9-414a-87f1-8e85d9af1b0d
