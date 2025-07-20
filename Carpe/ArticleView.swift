@@ -11,8 +11,32 @@ import WebKit
 import Reeeed
 import FoundationModels
 
-enum ViewMode {
+enum ViewMode: CaseIterable {
     case web, reader, ai
+
+    var buttonTitle: String {
+        switch self {
+        case .web: return "Reader Mode"
+        case .reader: return ModelUtils.isAvailable ? "AI Mode" : "Web View"
+        case .ai: return "Web View"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .web: return "doc.text"
+        case .reader: return ModelUtils.isAvailable ? "sparkles" : "safari"
+        case .ai: return "safari"
+        }
+    }
+
+    func next() -> ViewMode {
+        switch self {
+        case .web: return .reader
+        case .reader: return ModelUtils.isAvailable ? .ai : .web
+        case .ai: return .web
+        }
+    }
 }
 
 struct ArticleView: View {
@@ -55,18 +79,11 @@ struct ArticleView: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button(action: {
-                    switch viewMode {
-                    case .web:
-                        viewMode = .reader
-                    case .reader:
-                        viewMode = ModelUtils.isAvailable ? .ai : .web
-                    case .ai:
-                        viewMode = .web
-                    }
+                    viewMode = viewMode.next()
                 }) {
                     Label(
-                        viewMode == .web ? "Reader Mode" : viewMode == .reader ? (ModelUtils.isAvailable ? "AI Mode" : "Web View") : "Web View",
-                        systemImage: viewMode == .web ? "doc.text" : viewMode == .reader ? (ModelUtils.isAvailable ? "sparkles" : "safari") : "safari"
+                        viewMode.buttonTitle,
+                        systemImage: viewMode.systemImage
                     )
                 }
             }
