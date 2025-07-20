@@ -10,16 +10,11 @@ import FoundationModels
 
 extension String {
     func chunked(into size: Int) -> [String] {
-        var chunks: [String] = []
-        var startIndex = self.startIndex
-        
-        while startIndex < self.endIndex {
-            let endIndex = self.index(startIndex, offsetBy: size, limitedBy: self.endIndex) ?? self.endIndex
-            chunks.append(String(self[startIndex..<endIndex]))
-            startIndex = endIndex
+        stride(from: 0, to: count, by: size).map { index in
+            let start = self.index(startIndex, offsetBy: index)
+            let end = self.index(start, offsetBy: size, limitedBy: endIndex) ?? endIndex
+            return String(self[start..<end])
         }
-        
-        return chunks
     }
 }
 
