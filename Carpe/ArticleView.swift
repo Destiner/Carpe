@@ -73,7 +73,7 @@ struct ArticleView: View {
         }
     }
     
-    private func loadPage(url: URL) async -> Void {
+    private func loadPage(url: URL) async {
         var eventId: WebPage.NavigationID? = nil
         if let pageData = article.pageData {
             eventId = page.load(pageData, mimeType: "text/html", characterEncoding: .utf8, baseURL: url)
