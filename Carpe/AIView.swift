@@ -158,17 +158,22 @@ struct AIView: View {
         
         do {
             let summary = try await ModelUtils.generateSummary(from: readerContent)
-            
-            await MainActor.run {
-                article.aiSummary = summary
-                isLoading = false
-            }
+            self.updateSummary(summary)
         } catch {
-            await MainActor.run {
-                loadingError = error.localizedDescription
-                isLoading = false
-            }
+            self.saveError(error)
         }
+    }
+    
+    @MainActor
+    private func updateSummary(_ summary: String) {
+        article.aiSummary = summary
+        isLoading = false
+    }
+    
+    @MainActor
+    private func saveError(_ error: Error) {
+        loadingError = error.localizedDescription
+        isLoading = false
     }
     
     private func askQuestion() async {
@@ -178,26 +183,27 @@ struct AIView: View {
         }
         
         let question = questionText.trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        await MainActor.run {
-            messages.append(ChatMessage(text: question, isUser: true))
-            questionText = ""
-            isAnswering = true
-        }
+        self.saveQuestion(question)
         
         do {
             let answer = try await ModelUtils.answer(content: readerContent, question: question)
-            
-            await MainActor.run {
-                messages.append(ChatMessage(text: answer, isUser: false))
-                isAnswering = false
-            }
+            self.saveResponse(answer)
         } catch {
-            await MainActor.run {
-                messages.append(ChatMessage(text: "Sorry, I couldn't answer your question: \(error.localizedDescription)", isUser: false))
-                isAnswering = false
-            }
+            self.saveResponse("Sorry, I couldn't answer your question: \(error.localizedDescription)")
         }
+    }
+    
+    @MainActor
+    private func saveQuestion(_ question: String) {
+        messages.append(ChatMessage(text: question, isUser: true))
+        questionText = ""
+        isAnswering = true
+    }
+    
+    @MainActor
+    private func saveResponse(_ response: String) {
+        messages.append(ChatMessage(text: response, isUser: false))
+        isAnswering = false
     }
 }
 
