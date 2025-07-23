@@ -72,7 +72,7 @@ struct ArticleView: View {
             case .reader:
                 ReaderView(article: article)
             case .ai:
-                AIView(article: article)
+                ModelView(article: article)
             }
         }
         .ignoresSafeArea(.all, edges: .bottom)

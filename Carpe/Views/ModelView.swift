@@ -1,5 +1,5 @@
 //
-//  AIView.swift
+//  ModelView.swift
 //  Carpe
 //
 //  Created by Timur Badretdinov on 29/06/2025.
@@ -15,7 +15,7 @@ struct ChatMessage: Identifiable {
     let timestamp = Date()
 }
 
-struct AIView: View {
+struct ModelView: View {
     let article: Article
     
     @State private var isLoading = false
@@ -242,6 +242,6 @@ struct ChatBubble: View {
         author: "John Doe",
         content: "This is sample content for the article that would normally be extracted from reader mode."
     )
-    return AIView(article: article)
+    return ModelView(article: article)
         .frame(minWidth: 500, minHeight: 500)
 }
