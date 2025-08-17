@@ -11,27 +11,21 @@ import Reeeed
 
 @MainActor
 class PageUtils {
-    // TODO rewrite with Observations
-    static func waitPageLoad(page: WebPage, url: URL, eventId: WebPage.NavigationID?) async -> Bool {
-        var event = page.currentNavigationEvent
-        while (true) {
-            do {
-                try await Task.sleep(for: .milliseconds(50))
-            } catch {
-                print("Sleep failed")
+    static func waitPageLoad(page: WebPage, url: URL, events: some AsyncSequence<WebPage.NavigationEvent, any Error>) async -> Bool {
+        do {
+            for try await event in events {
+                switch (event) {
+                case .committed:
+                    return true
+                case .finished:
+                    return true
+                default:
+                    continue
+                }
             }
-            event = page.currentNavigationEvent
-            if (event?.navigationID != eventId) {
-                continue
-            }
-            switch (event?.kind) {
-            case .failed(_):
-                return false
-            case .finished:
-                return true
-            default:
-                continue
-            }
+            return false
+        } catch {
+            return false
         }
     }
     

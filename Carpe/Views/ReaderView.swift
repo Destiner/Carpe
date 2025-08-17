@@ -70,8 +70,8 @@ struct ReaderView: View {
         
         // First try to use cached reader mode data
         if let readerMode = article.readerMode, let cachedHTML = readerMode.html {
-            let eventId = readerPage.load(html: cachedHTML, baseURL: article.url)
-            await waitForPageLoadAndUpdateState(page: readerPage, url: article.url, eventId: eventId)
+            let events = readerPage.load(html: cachedHTML, baseURL: article.url)
+            await waitForPageLoadAndUpdateState(page: readerPage, url: article.url, events: events)
             isLoading = false
             return
         }
@@ -82,8 +82,8 @@ struct ReaderView: View {
             
             // Load the styled HTML into our WebView
             if let html = readerMode.html {
-                let eventId = readerPage.load(html: html, baseURL: article.url)
-                await waitForPageLoadAndUpdateState(page: readerPage, url: article.url, eventId: eventId)
+                let events = readerPage.load(html: html, baseURL: article.url)
+                await waitForPageLoadAndUpdateState(page: readerPage, url: article.url, events: events)
             }
             isLoading = false
             
@@ -97,8 +97,8 @@ struct ReaderView: View {
         }
     }
     
-    private func waitForPageLoadAndUpdateState(page: WebPage, url: URL, eventId: WebPage.NavigationID?) async {
-        let isLoaded = await PageUtils.waitPageLoad(page: page, url: url, eventId: eventId)
+    private func waitForPageLoadAndUpdateState(page: WebPage, url: URL, events: some AsyncSequence<WebPage.NavigationEvent, any Error>) async {
+        let isLoaded = await PageUtils.waitPageLoad(page: page, url: url, events: events)
         if (!isLoaded) {
             return
         }

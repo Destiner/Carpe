@@ -82,14 +82,14 @@ struct ContentView: View {
         // Save for offline use and extract metadata
         Task {
             let page = WebPage()
-            let id = page.load(URLRequest(url: article.url))
-            let isLoaded = await PageUtils.waitPageLoad(page: page, url: article.url, eventId: id)
+            let events = page.load(URLRequest(url: article.url))
+            let isLoaded = await PageUtils.waitPageLoad(page: page, url: article.url, events: events)
             if (isLoaded) {
                 article.title = page.title
                 article.coverImageUrl = await PageUtils.getPageCoverImage(page: page)
 
                 // Store page data for offline use
-                article.pageData = try? await page.webArchiveData()
+                article.pageData = try? await page.exported(as: .webArchive)
                 
                 // Extract and store reader mode data
                 do {
